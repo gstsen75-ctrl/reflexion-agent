@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-llm =ChatOpenAI(model="gpt-4-turbo-preview")
+llm =ChatOpenAI(model="gpt-4-turbo")
 parser= JsonOutputToolsParser(return_id=True)
 parser_pydantic= PydanticToolsParser(tools = [AnswerQuestion])
 

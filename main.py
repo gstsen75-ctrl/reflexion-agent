@@ -28,7 +28,8 @@ builder.add_conditional_edges("revise", event_loop, {END:END, "execute_tools":"e
 builder.set_entry_point("draft")
 graph= builder.compile()
 
-graph.get_graph().draw_mermaid_png(output_file_path="mermaid.png")
+# Uncomment to regenerate diagram:
+# graph.get_graph().draw_mermaid_png(output_file_path="mermaid.png")
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
    graph.invoke(HumanMessage(content="Write about AI powered SOC/autonomous soc problem domain, list startups that do that and raised capital."))

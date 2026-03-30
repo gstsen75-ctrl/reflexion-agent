@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reflexion Agent — AI Research Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0c12;
+      --surface: #11141e;
+      --card: #181c2a;
+      --border: rgba(255,255,255,0.07);
+      --border-focus: rgba(99,102,241,0.5);
+      --accent: #6366f1;
+      --accent-2: #818cf8;
+      --accent-glow: rgba(99,102,241,0.14);
+      --text: #eef0f8;
+      --text-2: #8b95b0;
+      --text-3: #40495c;
+      --search-bg: rgba(59,130,246,0.08);
+      --search-border: rgba(59,130,246,0.2);
+      --search-text: #60a5fa;
+      --ref-bg: rgba(16,185,129,0.08);
+      --ref-border: rgba(16,185,129,0.22);
+      --ref-text: #34d399;
+      --warn-bg: rgba(251,146,60,0.08);
+      --warn-border: rgba(251,146,60,0.2);
+      --warn-text: #fdba74;
+      --radius: 12px;
+      --radius-lg: 20px;
+      --shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 20% 60%, rgba(99,102,241,0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 15%, rgba(139,92,246,0.05) 0%, transparent 50%);
+    }
+
+    /* ── HERO ── */
+    .hero { text-align: center; padding: 64px 24px 40px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 14px; border-radius: 20px; margin-bottom: 22px;
+      background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.3);
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent-2);
+    }
+    .hero h1 {
+      font-size: clamp(1.9rem, 4.5vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--text) 30%, var(--accent-2) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 10px;
+    }
+    .hero p { color: var(--text-2); font-size: 1rem; max-width: 520px; margin: 0 auto; line-height: 1.6; }
+
+    /* ── CONTAINER ── */
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px 80px; position: relative; z-index: 1; }
+
+    /* ── INPUT ── */
+    .input-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px;
+      box-shadow: var(--shadow); margin-bottom: 28px;
+    }
+    .input-card textarea {
+      width: 100%; background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      font-size: 1rem; font-family: inherit; color: var(--text);
+      resize: vertical; min-height: 80px; outline: none; line-height: 1.6;
+      transition: border-color 0.2s, box-shadow 0.2s; margin-bottom: 14px;
+    }
+    .input-card textarea::placeholder { color: var(--text-3); }
+    .input-card textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .input-footer { display: flex; align-items: center; justify-content: space-between; }
+    .input-hint { font-size: 0.8rem; color: var(--text-3); }
+    .btn {
+      background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+      padding: 12px 26px; font-size: 0.93rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn:hover { background: #5254cc; box-shadow: 0 0 22px var(--accent-glow); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── LOADER ── */
+    #loader { display: none; text-align: center; padding: 56px 0; }
+    .loader-ring {
+      width: 48px; height: 48px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.75s linear infinite; margin: 0 auto 18px;
+    }
+    .loader-steps { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 24px; }
+    .loader-step {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-3); font-size: 0.85rem;
+      transition: color 0.4s;
+    }
+    .loader-step.active { color: var(--text-2); }
+    .loader-step .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-3); transition: background 0.4s;
+    }
+    .loader-step.active .dot { background: var(--accent-2); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULT ── */
+    #result { display: none; animation: fadeUp 0.45s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stats row */
+    .stats-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 500;
+    }
+    .stat-chip.revisions { background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.25); color: var(--accent-2); }
+    .stat-chip.searches  { background: var(--search-bg); border: 1px solid var(--search-border); color: var(--search-text); }
+    .stat-chip.refs      { background: var(--ref-bg); border: 1px solid var(--ref-border); color: var(--ref-text); }
+
+    /* Answer card */
+    .answer-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: var(--shadow); margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, #151825 0%, #121520 100%);
+    }
+    .card-header-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-3);
+    }
+    .card-header-tag {
+      font-size: 11px; font-weight: 600; color: var(--accent-2);
+    }
+    .answer-body {
+      padding: 28px; line-height: 1.85; color: var(--text-2);
+      font-size: 0.97rem; white-space: pre-wrap;
+    }
+
+    /* Searches */
+    .section-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: var(--shadow); margin-bottom: 16px;
+    }
+    .section-body { padding: 20px 24px; }
+    .query-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .query-tag {
+      padding: 5px 12px; border-radius: 8px; font-size: 0.82rem;
+      background: var(--search-bg); border: 1px solid var(--search-border);
+      color: var(--search-text);
+    }
+
+    /* References */
+    .ref-list { display: flex; flex-direction: column; gap: 8px; }
+    .ref-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 11px 14px; border-radius: 10px;
+      background: var(--ref-bg); border: 1px solid var(--ref-border);
+    }
+    .ref-num {
+      font-size: 0.75rem; font-weight: 700; color: var(--ref-text);
+      background: rgba(16,185,129,0.15); border-radius: 4px;
+      padding: 2px 7px; flex-shrink: 0; margin-top: 1px;
+    }
+    .ref-link {
+      color: var(--ref-text); text-decoration: none; font-size: 0.87rem;
+      word-break: break-all; line-height: 1.5;
+    }
+    .ref-link:hover { text-decoration: underline; }
+
+    /* Error */
+    .error-box {
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius); padding: 13px 16px;
+      color: #f87171; font-size: 0.88rem; margin-top: 14px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🪞 Reflexion · GPT-4 Turbo · Tavily Search</div>
+  <h1>Reflexion Agent</h1>
+  <p>Ask a research question. The agent drafts an answer, critiques itself, searches the web, and revises — returning a cited, high-quality response.</p>
+</div>
+
+<div class="container">
+  <div class="input-card">
+    <textarea id="question" placeholder="e.g. What is the AI-powered SOC problem domain, and which startups have raised capital in this space?"></textarea>
+    <div class="input-footer">
+      <span class="input-hint">Takes ~30–60 seconds — the agent searches and revises multiple times</span>
+      <button class="btn" id="research-btn">🔬 Research</button>
+    </div>
+    <div class="error-box" id="error-box"></div>
+  </div>
+
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-steps">
+      <div class="loader-step active" id="step-draft"><span class="dot"></span>Drafting initial answer…</div>
+      <div class="loader-step" id="step-search"><span class="dot"></span>Running web searches…</div>
+      <div class="loader-step" id="step-revise"><span class="dot"></span>Revising with search results…</div>
+      <div class="loader-step" id="step-cite"><span class="dot"></span>Adding citations and references…</div>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="answer-card">
+      <div class="card-header">
+        <span class="card-header-label">Final Answer</span>
+        <span class="card-header-tag" id="revision-tag"></span>
+      </div>
+      <div class="answer-body" id="answer-body"></div>
+    </div>
+
+    <div class="section-card" id="searches-card" style="display:none">
+      <div class="card-header">
+        <span class="card-header-label">🔍 Searches Performed</span>
+      </div>
+      <div class="section-body">
+        <div class="query-tags" id="query-tags"></div>
+      </div>
+    </div>
+
+    <div class="section-card" id="refs-card" style="display:none">
+      <div class="card-header">
+        <span class="card-header-label">📎 References</span>
+      </div>
+      <div class="section-body">
+        <div class="ref-list" id="ref-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Animate loader steps progressively
+  let stepTimer = null;
+  const steps = ['step-draft', 'step-search', 'step-revise', 'step-cite'];
+  function startLoaderAnimation() {
+    let i = 0;
+    stepTimer = setInterval(() => {
+      steps.forEach((s, idx) => {
+        document.getElementById(s).classList.toggle('active', idx <= i);
+      });
+      i = Math.min(i + 1, steps.length - 1);
+    }, 8000);
+  }
+  function stopLoaderAnimation() {
+    clearInterval(stepTimer);
+    steps.forEach(s => document.getElementById(s).classList.remove('active'));
+  }
+
+  document.getElementById('research-btn').addEventListener('click', research);
+  document.getElementById('question').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.ctrlKey) research();
+  });
+
+  async function research() {
+    const q = document.getElementById('question').value.trim();
+    if (!q) return;
+
+    const btn = document.getElementById('research-btn');
+    btn.disabled = true;
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('error-box').style.display = 'none';
+    document.getElementById('loader').style.display = 'block';
+    // reset step states
+    steps.forEach((s, i) => document.getElementById(s).classList.toggle('active', i === 0));
+    startLoaderAnimation();
+
+    try {
+      const res = await fetch('/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+
+      // Stats
+      const statsRow = document.getElementById('stats-row');
+      statsRow.innerHTML = `
+        <span class="stat-chip revisions">🔄 ${data.num_revisions} revision${data.num_revisions !== 1 ? 's' : ''}</span>
+        <span class="stat-chip searches">🔍 ${data.search_queries.length} search${data.search_queries.length !== 1 ? 'es' : ''}</span>
+        <span class="stat-chip refs">📎 ${data.references.length} reference${data.references.length !== 1 ? 's' : ''}</span>`;
+
+      // Answer
+      document.getElementById('answer-body').textContent = data.answer;
+      document.getElementById('revision-tag').textContent =
+        data.num_revisions > 0 ? `Revised ${data.num_revisions}×` : 'First draft';
+
+      // Search queries
+      if (data.search_queries.length > 0) {
+        const tags = document.getElementById('query-tags');
+        tags.innerHTML = '';
+        data.search_queries.forEach(q => {
+          const span = document.createElement('span');
+          span.className = 'query-tag';
+          span.textContent = q;
+          tags.appendChild(span);
+        });
+        document.getElementById('searches-card').style.display = 'block';
+      }
+
+      // References
+      if (data.references.length > 0) {
+        const list = document.getElementById('ref-list');
+        list.innerHTML = '';
+        data.references.forEach((ref, i) => {
+          const div = document.createElement('div');
+          div.className = 'ref-item';
+          const url = ref.replace(/^\[?\d+\]?\s*/, '').trim();
+          div.innerHTML = `
+            <span class="ref-num">${i + 1}</span>
+            <a class="ref-link" href="${escAttr(url)}" target="_blank" rel="noopener">${escHtml(url)}</a>`;
+          list.appendChild(div);
+        });
+        document.getElementById('refs-card').style.display = 'block';
+      }
+
+      stopLoaderAnimation();
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('result').style.display = 'block';
+
+    } catch (err) {
+      stopLoaderAnimation();
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('error-box').textContent = err.message;
+      document.getElementById('error-box').style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function escAttr(s) {
+    return s.replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>

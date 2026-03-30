@@ -40,6 +40,8 @@ flowchart TD
 
 | Component | Technology |
 |---|---|
+| Web framework | Flask |
+| Frontend | Custom HTML/CSS/JS — animated research steps, search query tags, cited references |
 | Graph orchestration | LangGraph `MessageGraph` |
 | LLM | OpenAI GPT-4 Turbo |
 | Web search | Tavily Search API (batched parallel queries) |
@@ -52,10 +54,13 @@ flowchart TD
 
 ```
 reflexion-agent/
-├── main.py           # LangGraph graph definition + entry point
+├── app.py            # Flask web server (port 5004)
+├── main.py           # LangGraph graph definition + CLI entry point
 ├── chains.py         # first_responder and revisor chains with prompt templates
 ├── schemas.py        # Pydantic schemas: Reflection, AnswerQuestion, ReviseAnswer
-└── tool_executor.py  # ToolNode wrapping Tavily for parallel query execution
+├── tool_executor.py  # ToolNode wrapping Tavily for parallel query execution
+└── templates/
+    └── index.html    # Web UI with animated steps, search tags, and references
 ```
 
 ---
@@ -88,13 +93,17 @@ OPENAI_API_KEY=your_openai_key
 TAVILY_API_KEY=your_tavily_key
 ```
 
-Run:
+To run via CLI:
 ```bash
 python main.py
 ```
 
-Example query (hardcoded in `main.py`):
-> *"Write about AI-Powered SOC / autonomous SOC problem domain, list startups that do that and raised capital."*
+To run the web app:
+```bash
+python app.py
+```
+
+Then open `http://localhost:5004` — enter any research question and the UI will show the search queries used, revision count, final answer, and clickable references. Allow 30–60 seconds for the full pipeline to run.
 
 ---
 
